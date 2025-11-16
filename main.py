@@ -43,14 +43,14 @@ class SimplexUI:
         btn_frame = tk.Frame(root)
         btn_frame.grid(row=2, column=0, columnspan=5, pady=10)
 
-        tk.Button(btn_frame, text="➕ Dodaj wyrób", command=self.add_row).grid(row=0, column=0, padx=5)
-        tk.Button(btn_frame, text="➖ Usuń ostatni", command=self.remove_row).grid(row=0, column=1, padx=5)
+        tk.Button(btn_frame, text="Dodaj wyrób", command=self.add_row).grid(row=0, column=0, padx=5)
+        tk.Button(btn_frame, text="Usuń wyrób", command=self.remove_row).grid(row=0, column=1, padx=5)
 
         resource_btn_frame = tk.Frame(root)
         resource_btn_frame.grid(row=3, column=0, columnspan=5, pady=5)
 
-        tk.Button(resource_btn_frame, text="➕ Dodaj surowiec", command=self.add_resource).grid(row=0, column=0, padx=5)
-        tk.Button(resource_btn_frame, text="➖ Usuń surowiec", command=self.remove_resource).grid(row=0, column=1,
+        tk.Button(resource_btn_frame, text="Dodaj surowiec", command=self.add_resource).grid(row=0, column=0, padx=5)
+        tk.Button(resource_btn_frame, text="Usuń surowiec", command=self.remove_resource).grid(row=0, column=1,
                                                                                                  padx=5)
 
         calc_options_frame = tk.Frame(root)
@@ -87,33 +87,33 @@ class SimplexUI:
 
     def show_help(self):
         instructions = """
-Instrukcja korzystania z aplikacji Simplex Solver
+Instrukcja
 
-1.  **Definiowanie Surowców (Ograniczeń):**
-    -   Użyj przycisków "➕ Dodaj surowiec" i "➖ Usuń surowiec", aby zdefiniować, ile surowców (ograniczeń) jest w problemie.
-    -   Wpisz maksymalną dostępną ilość (limit) każdego surowca w polach "Maks. zasób...".
+1. Definiowanie Surowców:
+    - Użyj przycisków ,,Dodaj surowiec" i ,,Usuń surowiec", aby zdefiniować liczbę surowców.
+    - Wpisz maksymalną dostępną ilość każdego surowca w polach ,,Maks. zasób s1" i ,,Maks. zasób s2".
 
-2.  **Definiowanie Wyrobów (Zmiennych Decyzyjnych):**
-    -   Użyj przycisków "➕ Dodaj wyrób" i "➖ Usuń wyrób", aby zdefiniować, ile wyrobów (zmiennych decyzyjnych) jest w problemie.
-    -   Dla każdego wyrobu, wpisz zużycie każdego surowca na jednostkę produktu.
-    -   W ostatniej kolumnie ("Zysk jednostkowy") wpisz zysk (lub koszt) dla każdego wyrobu.
+2. Definiowanie Wyrobów:
+    - Użyj przycisków ,,Dodaj wyrób" i ,,Usuń wyrób", aby zdefiniować, ile wyrobów (zmiennych decyzyjnych) jest w problemie.
+    - Dla każdego wyrobu, wpisz zużycie każdego surowca na jednostkę produktu.
+    - W ostatniej kolumnie (,,Zysk jednostkowy") wpisz zysk (lub koszt) dla każdego wyrobu.
 
-3.  **Typ Optymalizacji:**
-    -   Wybierz "Max" dla maksymalizacji zysku lub "Min" dla minimalizacji kosztów.
+3. Typ Optymalizacji:
+    - Wybierz ,,Max" dla maksymalizacji zysku lub ,,Min" dla minimalizacji kosztów.
 
-4.  **Wybór Wyrobów (Tryb Obliczeń):**
-    -   Wpisz `0` (domyślnie), aby rozwiązać problem dla *wszystkich* wyrobów na liście.
-    -   Wpisz liczbę (np. `2`), aby przetestować *każdą kombinację* tej liczby wyrobów (np. każdą parę) i znaleźć najlepszą z nich.
+4. Wybór Wyrobów:
+    - Wpisz ,,0" (domyślnie), aby rozwiązać problem dla wszystkich wyrobów na liście.
+    - Wpisz liczbę, aby przetestować każdą kombinację tej liczby wyrobów i znaleźć najlepszą z nich.
 
-5.  **Obliczenia:**
-    -   Naciśnij "Oblicz".
+5. Obliczenia:
+    - Naciśnij ,,Oblicz".
 
 --- Ograniczenia Algorytmu ---
 Obecna wersja algorytmu Simplex zakłada:
--   Wszystkie ograniczenia są typu "mniejsze lub równe" (<=).
--   Wszystkie limity surowców (prawa strona) są nieujemne (>= 0).
--   Problemy z ograniczeniami "większe lub równe" (>=) lub "równe" (=) nie będą rozwiązane poprawnie i mogą prowadzić do błędnych wyników lub błędu aplikacji.
--   Program wykrywa "rozwiązania nieograniczone", ale nie wykrywa "rozwiązań niedopuszczalnych" (sprzecznych ograniczeń).
+- Wszystkie ograniczenia są typu ,,mniejsze lub równe" (<=).
+- Wszystkie limity surowców (prawa strona) są nieujemne (>= 0).
+- Problemy z ograniczeniami ,,większe lub równe" (>=) lub ,,równe" (=) nie będą rozwiązane poprawnie i mogą prowadzić do błędnych wyników lub błędu aplikacji.
+- Program wykrywa ,,rozwiązania nieograniczone", ale nie wykrywa ,,rozwiązań niedopuszczalnych", czyli sprzecznych ograniczeń.
         """
         messagebox.showinfo("Instrukcja", instructions)
 
