@@ -68,7 +68,7 @@ class SimplexUI:
         combo_frame = tk.Frame(calc_options_frame)
         combo_frame.grid(row=0, column=1, padx=20)
 
-        tk.Label(combo_frame, text="Wybierz wyrobów:").grid(row=0, column=0, padx=5)
+        tk.Label(combo_frame, text="Wybierz ile wyrobów:").grid(row=0, column=0, padx=5)
         self.entry_combinations = tk.Entry(combo_frame, width=5)
         self.entry_combinations.grid(row=0, column=1, padx=5)
         self.entry_combinations.insert(0, "0")
