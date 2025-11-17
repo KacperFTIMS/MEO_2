@@ -43,14 +43,14 @@ class SimplexUI:
         btn_frame = tk.Frame(root)
         btn_frame.grid(row=2, column=0, columnspan=5, pady=10)
 
-        tk.Button(btn_frame, text="Dodaj wyrób", command=self.add_row).grid(row=0, column=0, padx=5)
-        tk.Button(btn_frame, text="Usuń wyrób", command=self.remove_row).grid(row=0, column=1, padx=5)
+        tk.Button(btn_frame, text="➕ Dodaj wyrób", command=self.add_row).grid(row=0, column=0, padx=5)
+        tk.Button(btn_frame, text="➖ Usuń ostatni", command=self.remove_row).grid(row=0, column=1, padx=5)
 
         resource_btn_frame = tk.Frame(root)
         resource_btn_frame.grid(row=3, column=0, columnspan=5, pady=5)
 
-        tk.Button(resource_btn_frame, text="Dodaj surowiec", command=self.add_resource).grid(row=0, column=0, padx=5)
-        tk.Button(resource_btn_frame, text="Usuń surowiec", command=self.remove_resource).grid(row=0, column=1,
+        tk.Button(resource_btn_frame, text="➕ Dodaj surowiec", command=self.add_resource).grid(row=0, column=0, padx=5)
+        tk.Button(resource_btn_frame, text="➖ Usuń surowiec", command=self.remove_resource).grid(row=0, column=1,
                                                                                                  padx=5)
 
         calc_options_frame = tk.Frame(root)
@@ -68,19 +68,22 @@ class SimplexUI:
         combo_frame = tk.Frame(calc_options_frame)
         combo_frame.grid(row=0, column=1, padx=20)
 
-        tk.Label(combo_frame, text="Wybierz wyrobów:").grid(row=0, column=0, padx=5)
+        tk.Label(combo_frame, text="Wybierz ile wyrobów:").grid(row=0, column=0, padx=5)
         self.entry_combinations = tk.Entry(combo_frame, width=5)
         self.entry_combinations.grid(row=0, column=1, padx=5)
         self.entry_combinations.insert(0, "0")
         tk.Label(combo_frame, text="(0 = wszystkie)").grid(row=0, column=2, padx=5)
 
+        tk.Label(root, text="Ograniczenia surowcowe (limity)", font=("Arial", 10, "bold")).grid(row=5, column=0,
+                                                                                                columnspan=5,
+                                                                                                pady=(10, 0))
         self.limits_frame = tk.Frame(root)
-        self.limits_frame.grid(row=5, column=0, columnspan=5, pady=10)
+        self.limits_frame.grid(row=6, column=0, columnspan=5, pady=10)
 
-        tk.Button(root, text="Oblicz", command=self.calculate).grid(row=6, column=0, columnspan=5, pady=15)
+        tk.Button(root, text="Oblicz", command=self.calculate).grid(row=7, column=0, columnspan=5, pady=15)
 
-        self.add_resource(default_name="s1", default_val=30)
-        self.add_resource(default_name="s2", default_val=40)
+        self.add_resource(default_name="s1", default_val=30, default_type="<=")
+        self.add_resource(default_name="s2", default_val=40, default_type="<=")
 
         for data in self.initial_data:
             self.add_row(default=data)
@@ -117,42 +120,58 @@ Obecna wersja algorytmu Simplex zakłada:
         """
         messagebox.showinfo("Instrukcja", instructions)
 
-    def add_resource(self, default_name=None, default_val=0):
+    def add_resource(self, default_name=None, default_val=0, default_type="<="):
         res_idx = len(self.resource_names)
         resource_name = default_name if default_name else f"s{res_idx + 1}"
+        col_idx = res_idx * 3
 
-        col_idx = res_idx + 1
-        header_lbl = tk.Label(self.frame, text=resource_name, font=("Arial", 10, "bold"), width=20, anchor="center")
-        header_lbl.grid(row=0, column=col_idx, padx=3, pady=3)
-        self.resource_headers.append(header_lbl)
+        lbl = tk.Label(self.limits_frame, text=f"{resource_name}:")
+        lbl.grid(row=0, column=col_idx, padx=(10, 0), sticky='e')
 
-        self.profit_header_label.grid(row=0, column=col_idx + 1, padx=3, pady=3)
+        constraint_type_var = tk.StringVar(value=default_type)
+        constraint_menu = tk.OptionMenu(self.limits_frame, constraint_type_var, "<=", ">=", "==")
+        constraint_menu.config(width=3)
+        constraint_menu.grid(row=0, column=col_idx + 1, padx=(5, 0))
 
-        lbl = tk.Label(self.limits_frame, text=f"Maks. zasób {resource_name}:")
-        lbl.grid(row=0, column=2 * res_idx, padx=5)
         entry = tk.Entry(self.limits_frame, width=10)
         entry.insert(0, str(default_val))
-        entry.grid(row=0, column=2 * res_idx + 1, padx=5)
-        self.resources.append({'label': lbl, 'entry': entry})
+        entry.grid(row=0, column=col_idx + 2, padx=(0, 10))
+
+        self.resources.append({
+            'label': lbl,
+            'menu': constraint_menu,
+            'constraint_type': constraint_type_var,
+            'entry': entry
+        })
+
+        self.resource_names.append(resource_name)
+
+        res_col_idx = res_idx + 1
+        header_lbl = tk.Label(self.frame, text=resource_name, font=("Arial", 10, "bold"), width=20, anchor="center")
+        header_lbl.grid(row=0, column=res_col_idx, padx=3, pady=3)
+        self.resource_headers.append(header_lbl)
+
+        self.profit_header_label.grid(row=0, column=res_col_idx + 1, padx=3, pady=3)
 
         for row_idx, row_widgets in enumerate(self.rows, start=1):
             e = tk.Entry(self.frame, width=20, justify="center")
             e.insert(0, "0")
-            e.grid(row=row_idx, column=col_idx, padx=3, pady=3)
-
+            e.grid(row=row_idx, column=res_col_idx, padx=3, pady=3)
             row_widgets.insert(-1, e)
-
             profit_entry = row_widgets[-1]
-            profit_entry.grid(row=row_idx, column=col_idx + 1, padx=3, pady=3)
-
-        self.resource_names.append(resource_name)
+            profit_entry.grid(row=row_idx, column=res_col_idx + 1, padx=3, pady=3)
 
     def remove_resource(self):
         if not self.resource_names:
             messagebox.showwarning("Błąd", "Brak surowców do usunięcia.")
             return
 
-        res_idx = len(self.resource_names) - 1
+        r = self.resources.pop()
+        r['label'].destroy()
+        r['menu'].destroy()
+        r['entry'].destroy()
+
+        res_idx = len(self.resource_names)
         col_idx = res_idx + 1
 
         header_lbl = self.resource_headers.pop()
@@ -160,14 +179,9 @@ Obecna wersja algorytmu Simplex zakłada:
 
         self.profit_header_label.grid(row=0, column=col_idx, padx=3, pady=3)
 
-        r = self.resources.pop()
-        r['label'].destroy()
-        r['entry'].destroy()
-
         for row_idx, row_widgets in enumerate(self.rows, start=1):
             entry_to_remove = row_widgets.pop(-2)
             entry_to_remove.destroy()
-
             profit_entry = row_widgets[-1]
             profit_entry.grid(row=row_idx, column=col_idx, padx=3, pady=3)
 
@@ -210,46 +224,134 @@ Obecna wersja algorytmu Simplex zakłada:
         for widget in self.rows.pop():
             widget.destroy()
 
-    def _solve_simplex(self, products_data, b_vector, num_resources, opt_type):
+    def _solve_simplex(self, products_data, b_vector_in, constraint_types_in, num_resources, opt_type):
         product_names = [p['name'] for p in products_data]
-        c_vector = [p['c'] for p in products_data]
-        A_matrix_T = [p['A_col'] for p in products_data]
+        c_vector = np.array([p['c'] for p in products_data], dtype=float)
+        A_matrix = np.array([p['A_col'] for p in products_data], dtype=float).T
+
+        b_vector = np.array(b_vector_in, dtype=float)
+        constraint_types = list(constraint_types_in)
 
         num_decision_vars = len(products_data)
-        num_slack_vars = num_resources
-        num_total_vars = num_decision_vars + num_slack_vars
 
-        c_j_row = np.array(c_vector + [0] * num_slack_vars, dtype=float)
+        for i in range(num_resources):
+            if b_vector[i] < 0:
+                b_vector[i] *= -1
+                A_matrix[i, :] *= -1
+                if constraint_types[i] == "<=":
+                    constraint_types[i] = ">="
+                elif constraint_types[i] == ">=":
+                    constraint_types[i] = "<="
 
-        if not A_matrix_T:
-            return {"status": "error", "message": "Brak wyrobów do przetworzenia."}
+        slack_vars_count = 0
+        surplus_vars_count = 0
+        artificial_vars_count = 0
 
-        A_matrix = np.array(A_matrix_T).T
-        I_matrix = np.eye(num_resources)
-        constraints_matrix = np.hstack((A_matrix, I_matrix))
+        slack_surplus_matrix = np.zeros((num_resources, num_resources))
+        artificial_matrix = np.zeros((num_resources, num_resources))
 
-        rhs_b = np.array(b_vector, dtype=float)
+        basis = []
+        artificial_var_indices = []
 
-        cB = np.zeros(num_resources, dtype=float)
+        s_idx = 0
+        a_idx = 0
 
-        basic_var_indices = list(range(num_decision_vars, num_total_vars))
+        for i in range(num_resources):
+            if constraint_types[i] == "<=":
+                slack_surplus_matrix[i, s_idx] = 1
+                basis.append(num_decision_vars + s_idx)
+                s_idx += 1
+                slack_vars_count += 1
+            elif constraint_types[i] == ">=":
+                slack_surplus_matrix[i, s_idx] = -1
+                artificial_matrix[i, a_idx] = 1
+                basis.append(num_decision_vars + num_resources + a_idx)
+                artificial_var_indices.append(num_decision_vars + num_resources + a_idx)
+                s_idx += 1
+                a_idx += 1
+                surplus_vars_count += 1
+                artificial_vars_count += 1
+            elif constraint_types[i] == "==":
+                artificial_matrix[i, a_idx] = 1
+                basis.append(num_decision_vars + num_resources + a_idx)
+                artificial_var_indices.append(num_decision_vars + num_resources + a_idx)
+                a_idx += 1
+                artificial_vars_count += 1
+
+        num_slack_surplus_vars = s_idx
+
+        slack_surplus_matrix = slack_surplus_matrix[:, :num_slack_surplus_vars]
+        artificial_matrix = artificial_matrix[:, :artificial_vars_count]
+
+        tableau = np.hstack((A_matrix, slack_surplus_matrix, artificial_matrix))
+        rhs = b_vector
+
+        if artificial_vars_count > 0:
+            c_phase1 = np.zeros(tableau.shape[1])
+            c_phase1[num_decision_vars + num_slack_surplus_vars:] = 1.0
+
+            cB = np.array([c_phase1[i] for i in basis])
+
+            while True:
+                z_j = cB @ tableau
+                c_minus_z = c_phase1 - z_j
+
+                if np.all(c_minus_z >= -1e-9):
+                    break
+
+                pivot_col_idx = np.argmin(c_minus_z)
+                pivot_column = tableau[:, pivot_col_idx]
+
+                if np.all(pivot_column <= 1e-9):
+                    return {"status": "unbounded", "profit": -np.inf, "product_names": product_names}
+
+                ratios = np.full(num_resources, np.inf)
+                for i in range(num_resources):
+                    if pivot_column[i] > 1e-9:
+                        ratios[i] = rhs[i] / pivot_column[i]
+
+                pivot_row_idx = np.argmin(ratios)
+                pivot_element = tableau[pivot_row_idx, pivot_col_idx]
+
+                basis[pivot_row_idx] = pivot_col_idx
+                cB[pivot_row_idx] = c_phase1[pivot_col_idx]
+
+                pivot_row = tableau[pivot_row_idx, :]
+                tableau[pivot_row_idx, :] = pivot_row / pivot_element
+                rhs[pivot_row_idx] = rhs[pivot_row_idx] / pivot_element
+
+                for i in range(num_resources):
+                    if i != pivot_row_idx:
+                        factor = tableau[i, pivot_col_idx]
+                        tableau[i, :] -= factor * tableau[pivot_row_idx, :]
+                        rhs[i] -= factor * rhs[pivot_row_idx]
+
+            final_profit_phase1 = cB @ rhs
+            if final_profit_phase1 > 1e-6:
+                return {"status": "infeasible"}
+
+            cols_to_delete = list(range(num_decision_vars + num_slack_surplus_vars, tableau.shape[1]))
+            tableau = np.delete(tableau, cols_to_delete, axis=1)
+
+        c_phase2 = np.concatenate((c_vector, np.zeros(num_slack_surplus_vars)))
+
+        if opt_type == "min":
+            c_phase2 = -c_phase2
+
+        cB = np.array([c_phase2[i] for i in basis])
+        c_minus_z = np.zeros(tableau.shape[1])  # Inicjalizacja
 
         while True:
-            z_j = cB @ constraints_matrix
-            c_j_minus_z_j = c_j_row - z_j
+            z_j = cB @ tableau
+            c_minus_z = c_phase2 - z_j
 
-            if (opt_type == "max" and np.all(c_j_minus_z_j <= 0)) or \
-                    (opt_type == "min" and np.all(c_j_minus_z_j >= 0)):
+            if np.all(c_minus_z <= 1e-9):
                 break
 
-            if opt_type == "max":
-                pivot_col_idx = np.argmax(c_j_minus_z_j)
-            else:
-                pivot_col_idx = np.argmin(c_j_minus_z_j)
+            pivot_col_idx = np.argmax(c_minus_z)
+            pivot_column = tableau[:, pivot_col_idx]
 
-            pivot_column = constraints_matrix[:, pivot_col_idx]
-
-            if np.all(pivot_column <= 0):
+            if np.all(pivot_column <= 1e-9):
                 return {
                     "status": "unbounded",
                     "profit": np.inf if opt_type == "max" else -np.inf,
@@ -258,37 +360,57 @@ Obecna wersja algorytmu Simplex zakłada:
 
             ratios = np.full(num_resources, np.inf)
             for i in range(num_resources):
-                if pivot_column[i] > 0:
-                    ratios[i] = rhs_b[i] / pivot_column[i]
+                if pivot_column[i] > 1e-9:
+                    ratios[i] = rhs[i] / pivot_column[i]
 
             pivot_row_idx = np.argmin(ratios)
-            pivot_element = constraints_matrix[pivot_row_idx, pivot_col_idx]
+            if np.all(ratios == np.inf):
+                return {
+                    "status": "unbounded",
+                    "profit": np.inf if opt_type == "max" else -np.inf,
+                    "product_names": product_names
+                }
 
-            cB[pivot_row_idx] = c_j_row[pivot_col_idx]
-            basic_var_indices[pivot_row_idx] = pivot_col_idx
+            pivot_element = tableau[pivot_row_idx, pivot_col_idx]
 
-            pivot_row = constraints_matrix[pivot_row_idx, :]
-            pivot_row /= pivot_element
-            rhs_b[pivot_row_idx] /= pivot_element
+            basis[pivot_row_idx] = pivot_col_idx
+            cB[pivot_row_idx] = c_phase2[pivot_col_idx]
+
+            pivot_row = tableau[pivot_row_idx, :]
+            tableau[pivot_row_idx, :] = pivot_row / pivot_element
+            rhs[pivot_row_idx] = rhs[pivot_row_idx] / pivot_element
 
             for i in range(num_resources):
                 if i != pivot_row_idx:
-                    factor = constraints_matrix[i, pivot_col_idx]
-                    constraints_matrix[i, :] -= factor * pivot_row
-                    rhs_b[i] -= factor * rhs_b[pivot_row_idx]
+                    factor = tableau[i, pivot_col_idx]
+                    tableau[i, :] -= factor * tableau[pivot_row_idx, :]
+                    rhs[i] -= factor * rhs[pivot_row_idx]
 
-        final_profit = cB @ rhs_b
+        all_vars_indices = set(range(tableau.shape[1]))
+        non_basic_indices = all_vars_indices - set(basis)
+
+        has_alternatives = False
+        for idx in non_basic_indices:
+            if abs(c_minus_z[idx]) < 1e-9:
+                if np.any(tableau[:, idx] > 1e-9):
+                    has_alternatives = True
+                    break
+
+        final_profit = cB @ rhs
+        if opt_type == "min":
+            final_profit = -final_profit
 
         solution_values = np.zeros(num_decision_vars, dtype=float)
-        for i, var_idx in enumerate(basic_var_indices):
-            if var_idx < num_decision_vars:  # Jeśli zmienna bazowa jest zmienną decyzyjną
-                solution_values[var_idx] = rhs_b[i]
+        for i, var_idx in enumerate(basis):
+            if var_idx < num_decision_vars:
+                solution_values[var_idx] = rhs[i]
 
         return {
             "status": "optimal",
             "profit": final_profit,
             "product_names": product_names,
-            "solution_values": solution_values
+            "solution_values": solution_values,
+            "has_alternatives": has_alternatives
         }
 
     def _display_result(self, result, opt_type, k_val):
@@ -298,6 +420,12 @@ Obecna wersja algorytmu Simplex zakłada:
             messagebox.showwarning("Rozwiązanie nieograniczone",
                                    f"Problem nie ma ograniczonego rozwiązania optymalnego.\n"
                                    f"(Dotyczy kombinacji: {product_names_str})")
+            return
+
+        if result['status'] == 'infeasible':
+            messagebox.showerror("Brak rozwiązania",
+                                 "Rozwiązanie niedopuszczalne!\n\n"
+                                 "Ograniczenia są ze sobą sprzeczne (np. x <= 5 i x >= 10).")
             return
 
         if result['status'] == 'optimal':
@@ -317,6 +445,9 @@ Obecna wersja algorytmu Simplex zakłada:
             message = header + f"Wartość funkcji celu (Zysk/Koszt): {profit_str}\n\n" \
                                f"Należy produkować:\n{solution_str}"
 
+            if result.get("has_alternatives", False):
+                message += "\n\nUwaga: Istnieją alternatywne rozwiązania optymalne (rozwiązaniem jest odcinek), które dają ten sam wynik."
+
             messagebox.showinfo(title, message)
 
         elif result['status'] == 'error':
@@ -325,6 +456,7 @@ Obecna wersja algorytmu Simplex zakłada:
     def calculate(self):
         try:
             b_vector = [float(r['entry'].get()) for r in self.resources]
+            constraint_types = [r['constraint_type'].get() for r in self.resources]
             num_resources = len(self.resources)
             opt_type = self.opt_type.get()
 
@@ -358,7 +490,8 @@ Obecna wersja algorytmu Simplex zakłada:
                     return
 
                 for product_combo in itertools.combinations(all_products_data, k):
-                    result = self._solve_simplex(list(product_combo), b_vector, num_resources, opt_type)
+                    result = self._solve_simplex(list(product_combo), b_vector, constraint_types, num_resources,
+                                                 opt_type)
                     results_list.append(result)
 
                 if not results_list:
@@ -366,8 +499,13 @@ Obecna wersja algorytmu Simplex zakłada:
                     return
 
                 valid_results = [r for r in results_list if r['status'] in ('optimal', 'unbounded')]
+
                 if not valid_results:
-                    messagebox.showerror("Błąd", "Wszystkie kombinacje zakończyły się błędem.")
+                    if all(r['status'] == 'infeasible' for r in results_list):
+                        messagebox.showerror("Błąd",
+                                             "Wszystkie możliwe kombinacje produktów prowadzą do sprzecznych ograniczeń (brak rozwiązania).")
+                    else:
+                        messagebox.showerror("Błąd", "Wszystkie kombinacje zakończyły się błędem.")
                     return
 
                 if opt_type == "max":
@@ -382,7 +520,7 @@ Obecna wersja algorytmu Simplex zakłada:
                     messagebox.showerror("Błąd", "Brak wyrobów do przetworzenia.")
                     return
 
-                result = self._solve_simplex(all_products_data, b_vector, num_resources, opt_type)
+                result = self._solve_simplex(all_products_data, b_vector, constraint_types, num_resources, opt_type)
                 self._display_result(result, opt_type, 0)
 
         except ValueError:
